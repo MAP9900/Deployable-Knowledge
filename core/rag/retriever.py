@@ -411,7 +411,7 @@ def embed_file(
         source=source,
         tags=tags or ["embedded"],
         positions=positions,
-        page=pages, #Page number here! SHOULD DELETE THIS
+        page=pages, #Page number here! SHOULD DELETE THIS SO PAGE NUMBER NOT RECORDED TWICE
         metadata=metadata, #Page number here!
         progress_callback=progress_callback,
     )
@@ -448,7 +448,10 @@ def embed_directory(
 def search(
     query: str, top_k: int = 5, exclude_sources: Optional[set] = None
 ) -> List[Dict]:
-    """Perform a vector similarity search over embedded segments."""
+    """Perform a vector similarity search over embedded segments.
+    
+    Returns Chunks with page numbers attached as Metdata. 
+    """
 
     if top_k <= 0:
         return []
