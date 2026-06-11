@@ -147,11 +147,11 @@ class DBManager:
 
         for i, segment in enumerate(segments):
             start, end = positions[i] if positions else (-1, -1)
-            p = page[i] if page else None
+            p = page[i] if page else None #page number here!
             extra_meta = metadata[i] if metadata and i < len(metadata) else {}
             if p is not None:
                 extra_meta = dict(extra_meta)
-                extra_meta["page"] = p
+                extra_meta["page"] = p #page number here!
             _id, doc, meta = self.build_entry(
                 segment_text=segment,
                 segment_index=i,
@@ -159,7 +159,7 @@ class DBManager:
                 tags=tags,
                 start=start,
                 end=end,
-                extra_metadata=extra_meta,
+                extra_metadata=extra_meta, #page number here!
             )
 
             ids.append(_id)
@@ -332,7 +332,7 @@ def embed_file(
             if chunk_text_ in seen_page_chunks:
                 continue
             seen_page_chunks.add(chunk_text_)
-            meta["page"] = page_num
+            meta["page"] = page_num #Page number here!
             meta["content_type"] = "table" if meta.get("table") else "text"
             all_chunks.append((chunk_text_, meta))
 
@@ -411,8 +411,8 @@ def embed_file(
         source=source,
         tags=tags or ["embedded"],
         positions=positions,
-        page=pages,
-        metadata=metadata,
+        page=pages, #Page number here! SHOULD DELETE THIS
+        metadata=metadata, #Page number here!
         progress_callback=progress_callback,
     )
 
