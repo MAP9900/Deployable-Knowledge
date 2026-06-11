@@ -4,10 +4,9 @@
 - Research Best BM25 Search Method to utilize 
 
 ### To Research:
-- BM25
-- NER
-- Exact Search
-
+- [x] BM25
+- [ ] NER
+- [ ] Exact Search
 
 
 ## BM25 Notes
@@ -23,10 +22,8 @@
 
 ## Metadata Issue!!!
 - Core Problem: Pagenumber carried through code twice and stored twice in ChromaDB
-
-
-'pages[i]
-metadata[i]["page"]'
+    - ` page=pages, #Page number here!` Comment Line Out 
+        `metadata=metadata, #Page number here!`
 
 
 
