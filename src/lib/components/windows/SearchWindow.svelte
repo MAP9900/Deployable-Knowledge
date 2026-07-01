@@ -22,6 +22,7 @@
     { id: "semantic", label: "Semantic" },
     { id: "bm25", label: "BM25" },
     { id: "hybrid", label: "Hybrid" },
+    { id: "graph", label: "Knowledge Graph" },
   ];
 
   let retrievalMode = $state<RetrievalMode>(
@@ -35,7 +36,9 @@
   });
 
   function readRetrievalMode(value: unknown): RetrievalMode {
-    if (value === "semantic" || value === "bm25" || value === "hybrid") {
+    if (
+      value === "semantic" || value === "bm25" || value === "hybrid" || value === "graph"
+    ) {
       return value;
     }
 
@@ -150,7 +153,8 @@
 
   .retrieval-row {
     display: grid;
-    grid-template-columns: auto 210px;
+    /* Four modes need enough width for the Knowledge Graph label to remain readable. */
+    grid-template-columns: auto minmax(280px, 340px);
     gap: 8px;
     align-items: center;
   }
@@ -164,7 +168,7 @@
   .retrieval-toggle {
     display: grid;
     min-width: 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -220,7 +224,7 @@
     }
 
     .retrieval-toggle {
-      width: min(210px, 100%);
+      width: min(340px, 100%);
     }
   }
 </style>

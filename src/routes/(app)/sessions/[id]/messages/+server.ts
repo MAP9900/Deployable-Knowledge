@@ -75,7 +75,10 @@ async function createTitle(
 }
 
 function readRetrievalMode(value: unknown): RagRetrievalMode | undefined {
-  if (value === "semantic" || value === "bm25" || value === "hybrid") {
+  // The chat route accepts the new graph mode from Search Settings.
+  if (
+    value === "semantic" || value === "bm25" || value === "hybrid" || value === "graph"
+  ) {
     return value;
   }
 

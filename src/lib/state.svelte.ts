@@ -6,7 +6,8 @@ import type {
   UserSettings,
 } from "$lib/server/database/schema";
 
-export type RetrievalMode = "semantic" | "bm25" | "hybrid";
+// Knowledge Graph is selectable alongside the existing retrieval methods.
+export type RetrievalMode = "semantic" | "bm25" | "hybrid" | "graph";
 
 export type Settings = {
   provider: string;

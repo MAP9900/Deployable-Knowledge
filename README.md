@@ -1,5 +1,17 @@
 # Deployable-Knowledge
 
+## Knowledge Graph retrieval
+
+The server-side `src/lib/server/knowledge-graph` module adds LightRAG neighborhood retrieval and PathRAG relational traversal on top of the application's existing document pipeline. It reads chunks already created by `rag/parse/chunker-semantic.ts`, uses the existing hybrid search for seed chunks, and returns graph evidence through the normal chat citation flow.
+
+Choose **Knowledge Graph** in the Search Settings window, then ask a question in chat. Newly ingested documents automatically invalidate the in-memory graph cache.
+
+Run the focused graph test with:
+
+```bash
+npm run test:knowledge-graph
+```
+
 **Version vA0.3.0**
 
 Offline‑first retrieval‑augmented generation (RAG) stack for disconnected or bandwidth‑constrained environments.
