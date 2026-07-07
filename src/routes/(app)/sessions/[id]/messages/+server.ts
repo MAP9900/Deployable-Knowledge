@@ -29,13 +29,15 @@ function createPrompt(
   const lines = [];
   const retrievalInstruction = ragContext
     ? [
-        "Use the retrieved document context when it is relevant.",
+        "Current retrieved document context for the latest user question:",
+        "Use this current retrieved context when it is relevant.",
+        "This current retrieved context supersedes earlier assistant answers or earlier statements that an answer was not found.",
         "If the context does not contain the answer, say that clearly.",
         "",
         ragContext,
       ].join("\n")
     : "";
-  const systemParts = [systemPrompt, persona, retrievalInstruction]
+  const systemParts = [systemPrompt, persona]
     .map((part) => part.trim())
     .filter(Boolean);
 
@@ -45,6 +47,8 @@ function createPrompt(
   for (const message of messages.slice(-20)) {
     lines.push(`${message.role}: ${message.content}`);
   }
+
+  if (retrievalInstruction) lines.push(`system: ${retrievalInstruction}`);
 
   // Push in prompt
   lines.push(`user: ${userMessage}`, "assistant:");
