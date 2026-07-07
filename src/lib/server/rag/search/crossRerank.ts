@@ -22,6 +22,7 @@ export interface RerankedDocument extends Document {
 // Global cache for model to avoid reloading on every query
 let tokenizer: any = null;
 let model: any = null;
+let warnedAboutFallback = false;
 
 async function initializeModel(): Promise<void> {
   if (!tokenizer || !model) {
@@ -56,6 +57,44 @@ function mergeDocuments(bm25Rank: Document[], vectorRank: Document[]): Map<strin
   return docs;
 }
 
+function numericScore(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function fallbackRank(candidates: Document[], options: RerankOptions): RerankedDocument[] {
+  const maxSemantic = Math.max(1, ...candidates.map((doc) => numericScore(doc.semanticScore)));
+  const maxBm25 = Math.max(1, ...candidates.map((doc) => numericScore(doc.bm25Score)));
+  const reranked = candidates.map((doc) => ({
+    ...doc,
+    score: (() => {
+      const semanticScore = numericScore(doc.semanticScore);
+      const bm25Score = numericScore(doc.bm25Score);
+      const semanticPart = semanticScore / maxSemantic;
+      const bm25Part = bm25Score / maxBm25;
+      const bothSignalsBonus = semanticScore > 0 && bm25Score > 0 ? 0.05 : 0;
+
+      return semanticPart * 0.7 + bm25Part * 0.25 + bothSignalsBonus;
+    })(),
+  }));
+
+  reranked.sort((left, right) => right.score - left.score);
+
+  if (typeof options.limit === "number") {
+    return reranked.slice(0, Math.max(0, Math.floor(options.limit)));
+  }
+
+  return reranked;
+}
+
+function warnFallback(error: unknown): void {
+  if (warnedAboutFallback) return;
+  warnedAboutFallback = true;
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(
+    `Cross-reranker unavailable; falling back to fused semantic/BM25 scores. ${message}`,
+  );
+}
+
 export async function reRankData(
   query: string,
   bm25Rank: Document[],
@@ -68,31 +107,36 @@ export async function reRankData(
 
   if (candidates.length === 0) return [];
 
-  await initializeModel();
+  try {
+    await initializeModel();
 
-  // Map query to document text string strings
-  const queries = new Array(candidates.length).fill(query);
-  const passages = candidates.map((doc) => doc.text as string);
-  const encodedInputs = await tokenizer(queries, {
-    text_pair: passages,
-    padding: true,
-    truncation: true,
-    max_length: 512,
-  });
+    // Map query to document text string strings
+    const queries = new Array(candidates.length).fill(query);
+    const passages = candidates.map((doc) => doc.text as string);
+    const encodedInputs = await tokenizer(queries, {
+      text_pair: passages,
+      padding: true,
+      truncation: true,
+      max_length: 512,
+    });
 
-  const { logits } = await model(encodedInputs);
-  const rawScores = logits.data;
+    const { logits } = await model(encodedInputs);
+    const rawScores = logits.data;
 
-  const reranked: RerankedDocument[] = candidates.map((doc, index) => ({
-    ...doc,
-    score: rawScores[index],
-  }));
+    const reranked: RerankedDocument[] = candidates.map((doc, index) => ({
+      ...doc,
+      score: rawScores[index],
+    }));
 
-  reranked.sort((left, right) => right.score - left.score);
+    reranked.sort((left, right) => right.score - left.score);
 
-  if (typeof options.limit === "number") {
-    return reranked.slice(0, Math.max(0, Math.floor(options.limit)));
+    if (typeof options.limit === "number") {
+      return reranked.slice(0, Math.max(0, Math.floor(options.limit)));
+    }
+
+    return reranked;
+  } catch (error) {
+    warnFallback(error);
+    return fallbackRank(candidates, options);
   }
-
-  return reranked;
 }

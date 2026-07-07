@@ -77,7 +77,11 @@ export async function searchKnowledgeGraph(
 
     results.push({
       ...chunk,
-      score: hybridPart * 0.55 + lightPart * 0.25 + pathPart * 0.2,
+      score:
+        hybridPart * 0.9 +
+        lightPart * 0.07 +
+        pathPart * 0.03 +
+        acronymDefinitionBoost(query, chunk.content),
       graphScore,
       hybridScore: score.hybridScore || undefined,
       matchedEntities: unique(score.matchedEntities),
@@ -88,6 +92,21 @@ export async function searchKnowledgeGraph(
 
   results.sort((left, right) => right.score - left.score);
   return { query, results: results.slice(0, topK), paths };
+}
+
+function acronymDefinitionBoost(query: string, content: string): number {
+  const match = query.match(/\b(?:what\s+does|define)\s+([A-Z][A-Z0-9/-]{1,12})\s+(?:stand\s+for|mean)\b/i);
+  const acronym = match?.[1]?.toUpperCase();
+  if (!acronym) return 0;
+
+  const normalized = content.replace(/\s+/g, " ");
+  const escaped = acronym.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const definesAcronym =
+    new RegExp(`\\b${escaped}\\b\\s*\\(`, "i").test(normalized) ||
+    new RegExp(`\\b${escaped}\\b\\s+acronym\\b`, "i").test(normalized) ||
+    new RegExp(`\\bacronym\\s+${escaped}\\b`, "i").test(normalized);
+
+  return definesAcronym ? 0.2 : 0;
 }
 
 function collectScores(
