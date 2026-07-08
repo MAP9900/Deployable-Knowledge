@@ -76,16 +76,19 @@ export async function TextExtract(file: Source, ocr_langs: string[] = ["eng"], m
     console.log(`[Pre-OCR Scan] Total Pages: ${totalPages} | Native Text Pages: ${text_count} | Images Awaiting OCR: ${img_count}`);
 
     // Keep track of which pages we already extracted native text from
-    const nativelyExtractedPages = chunks.map(c => c.pageIndex);
+    const nativelyExtractedPages = new Set(chunks.map(c => c.pageIndex));
 
-    //Running ocr
-    await doc.recognize({ ocr_langs, mode });
+    // Native-text PDFs do not need an expensive second OCR pass. Scribe recognizes every
+    // page when called, so only invoke it when at least one page has no extractable text.
+    if (img_count > 0) {
+        await doc.recognize({ langs: ocr_langs, mode });
+    }
 
     if (doc.ocr && doc.ocr.active) {
         for (let i = 0; i < doc.ocr.active.length; i++) {
             
             // Skip this page if we already got native text for it
-            if (nativelyExtractedPages.includes(i)) {
+            if (nativelyExtractedPages.has(i)) {
                 continue; 
             }
 

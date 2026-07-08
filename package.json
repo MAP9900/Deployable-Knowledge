@@ -13,6 +13,10 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"ingest:pdfs": "tsx scripts/ingest-pdfs.ts",
+		"seed:corpus": "tsx scripts/ingest-pdfs.ts documents/corpus",
+		"seed:database": "tsx scripts/create-seed-db.ts",
+		"seed:restore": "tsx scripts/restore-seed-db.ts",
 		"test:knowledge-graph": "tsx --test src/lib/server/knowledge-graph/*.test.ts"
 	},
 	"devDependencies": {
