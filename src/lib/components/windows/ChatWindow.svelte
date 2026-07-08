@@ -135,41 +135,51 @@
 
     await scrollToBottom();
 
-    const res = await fetch(`/sessions/${session.id}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        model_id: appState.currentModelId,
-        provider_id: appState.currentProviderId,
-        max_tokens: appState.maxTokens,
-        temperature: appState.temperature,
-        top_k: appState.topK,
-        prompt_template_id: appState.promptTemplateId || null,
-        persona: appState.persona,
-        document_ids: $selectedDocumentIds,
-        retrieval_mode: appState.retrievalMode,
-        rag_top_k: appState.ragTopK,
-      }),
-    });
+    try {
+      const res = await fetch(`/sessions/${session.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          model_id: appState.currentModelId,
+          provider_id: appState.currentProviderId,
+          max_tokens: appState.maxTokens,
+          temperature: appState.temperature,
+          top_k: appState.topK,
+          prompt_template_id: appState.promptTemplateId || null,
+          persona: appState.persona,
+          document_ids: $selectedDocumentIds,
+          retrieval_mode: appState.retrievalMode,
+          rag_top_k: appState.ragTopK,
+        }),
+      });
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      for (const token of decoder.decode(value, { stream: true }).split("\n").filter(Boolean)) {
-        messageStream += token;
-        await scrollToBottom();
+      if (!res.ok || !res.body) {
+        throw new Error(`Chat request failed (${res.status})`);
       }
-    }
 
-    messages = await loadMessages(session.id);
-    loadedSessionId = session.id;
-    busy = false;
-    messageStream = "";
-    await scrollToBottom();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const token of decoder.decode(value, { stream: true }).split("\n").filter(Boolean)) {
+          messageStream += token;
+          await scrollToBottom();
+        }
+      }
+
+      messages = await loadMessages(session.id);
+      loadedSessionId = session.id;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send chat message.";
+      status = `${message}. Check that the selected LLM provider/model is running.`;
+    } finally {
+      busy = false;
+      messageStream = "";
+      await scrollToBottom();
+    }
   }
 
   async function createNewChat() {
