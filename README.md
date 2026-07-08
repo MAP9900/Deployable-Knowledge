@@ -2,7 +2,7 @@
 
 **Version vA0.6.7**
 
-Deployable Knowledge is an edge-first, comprehensive knowledge retrieval and generation tool. Built in TypeScript, it is designed for disconnected or bandwidth-constrained environments, providing high-precision multi-hop reasoning through a unique triple-engine search architecture.
+Deployable Knowledge is an edge-first, comprehensive knowledge retrieval and generation tool. Built in TypeScript, it is designed for disconnected or bandwidth-constrained environments, providing high-precision multi-hop reasoning through a unique triple-engine search architecture. Deployable‑Knowledge bundles a local vector store, prompt management and a lightweight web UI around a pluggable large‑language model.  Documents are embedded locally, the frontend is developed in [Sveltekit](https://svelte.dev), the backend is written in [Typescript](https://typescriptlang.org).
 
 ## Overview
 
@@ -34,7 +34,7 @@ The final retrieved contexts—selected through the re-ranker—are provided to 
 
 🛠️ Quick Start
 Installation
-Ensure you have the necessary environments for OCR and local LLM serving (e.g., vLLM or o-llama)
+Ensure you have the necessary environments for OCR and local LLM serving (e.g., vLLM or Ollama)
 
 # Install dependencies
 npm install
@@ -61,90 +61,6 @@ Inspired by the neurobiological Hippocampal Indexing Theory and state-of-the-art
 - **Configurable prompts** and persona editing
 - **Authentication middleware** with session and CSRF protection
 
-## Quick Start for Usage
-
-- For verbose start/run, simply run (double-click) `Launch-DeployableKnowledge.bat` or `Launch-DeployableKnowledge.ps1`
-- For user-friendly/silent start, simply run (double-click) `Launch-DeployableKnowledge.bat-User` or `Launch-DeployableKnowledge-User.ps1`
-
-## Quick Start for Development
-
-**Unix / macOS:**
-
-```bash
-make setup
-make run
-```
-
-**Windows (PowerShell):**
-
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
-
-Use `python -m pip` and `python -m pytest` so installs and tests use the same Python as your shell; this avoids "script location not on PATH" or "pytest not recognized" when the venv Scripts folder is not on PATH.
-
-**Run tests:**
-
-```bash
-python -m pytest tests/ -q
-```
-
-Visit <http://localhost:8000> once the server starts. Ollama is available by default with the seeded `llama3` model; use **Manage API Keys** in the prompt editor to connect hosted providers.
-
-**If you see "script location not on PATH" or "pytest not recognized":** run `pip` and `pytest` as modules so the active Python is used: `python -m pip install -r requirements.txt` and `python -m pytest tests/ -q`.
-
-## Architecture overview
-
-The system is split into three layers:
-
-```text
-core/  – retrieval, prompt rendering and LLM adapters
-api/   – FastAPI routers translating HTTP ↔ core
-app/   – static assets and UI routes
-```
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed diagrams and data‑flow breakdowns.
-
-## Documentation
-
-Additional guides live in the [`docs/`](docs) folder:
-
-- [API reference](docs/API_REFERENCE.md)
-- [UI overview](docs/UI_OVERVIEW.md)
-- [Backend services](docs/BACKEND_SERVICES.md)
-- [Configuration guide](docs/CONFIGURATION.md)
-- [Prompt & LLM integration](docs/PROMPTS_LLM.md)
-
-## Contributing
-
-1. Create a feature branch off `main`.
-2. Add tests and run `python -m pytest tests/` before submitting a pull request.
-3. Follow the existing coding style and keep docstrings concise.
-4. Open a PR describing the change and link to any relevant issues.
-
----
-Released under the MIT license.
-
-
-**Version vA0.3.0**
-
-Offline‑first retrieval‑augmented generation (RAG) stack for disconnected or bandwidth‑constrained environments.
-
-## Overview
-
-Deployable‑Knowledge bundles a local vector store, prompt management and a lightweight web UI around a pluggable large‑language model.  Documents are embedded locally, the frontend is developed in [Sveltekit](https://svelte.dev), the backend is written in [Typescript](https://typescriptlang.org).
-
-## Features
-
-- **Document ingestion** for PDF and plaintext sources
-- **ChromaDB** vector store with sentence‑transformer embeddings
-- **Chat and search** endpoints with optional streaming responses
-- **Configurable prompts** and persona editing
-- **Authentication middleware** with session and CSRF protection
-
 ## Quick Start for Development
 
 ```bash
@@ -161,6 +77,14 @@ npm run dev
 ## Architecture overview
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed diagrams and data‑flow breakdowns.
+
+The system is split into three layers:
+
+```text
+core/  – retrieval, prompt rendering and LLM adapters
+api/   – FastAPI routers translating HTTP ↔ core
+app/   – static assets and UI routes
+```
 
 ## Documentation
 
@@ -179,5 +103,20 @@ Additional guides live in the [`docs/`](docs) folder:
 3. Follow the existing coding style (run formatter, before committing `npm run format`). 
 4. Open a PR describing the change and link to any relevant issues.
 
----
-Released under the MIT license.
+## Quick Start for Usage
+
+- For verbose start/run, simply run (double-click) `Launch-DeployableKnowledge.bat` or `Launch-DeployableKnowledge.ps1`
+- For user-friendly/silent start, simply run (double-click) `Launch-DeployableKnowledge.bat-User` or `Launch-DeployableKnowledge-User.ps1`
+
+## Quick Start for Development
+
+**Unix / macOS:**
+
+```bash
+make setup
+make run
+```
+
+Visit <http://localhost:8000> once the server starts. Ollama is available by default with the seeded `llama3` model; use **Manage API Keys** in the prompt editor to connect hosted providers.
+
+
