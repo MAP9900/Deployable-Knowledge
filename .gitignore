@@ -23,6 +23,7 @@ app.db
 app.db-*
 drizzle/
 documents/*.pdf
+documents/corpus/
 
 
 # --- Model cache or sentence-transformers ---
