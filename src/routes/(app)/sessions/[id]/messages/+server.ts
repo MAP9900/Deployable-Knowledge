@@ -30,8 +30,18 @@ function createPrompt(
   const ragInstruction = ragContext
     ? "You are a RAG helper. Only answer using the provided context. Do not add information that is not in context. If the answer is not in context, say you do not know."
     : "";
+  const retrievalInstruction = ragContext
+    ? [
+        "Current retrieved document context for the latest user question:",
+        "Use this current retrieved context when it is relevant.",
+        "This current retrieved context supersedes earlier assistant answers or earlier statements that an answer was not found.",
+        "If the context does not contain the answer, say that clearly.",
+        "",
+        ragContext,
+      ].join("\n")
+    : "";
   const personaBlock = persona.trim() ? `Persona: ${persona.trim()}` : "";
-  const systemParts = [systemPrompt, ragInstruction, personaBlock, ragContext]
+  const systemParts = [systemPrompt, ragInstruction, personaBlock]
     .map((part) => part.trim())
     .filter(Boolean);
 
@@ -41,6 +51,8 @@ function createPrompt(
   for (const message of messages.slice(-20)) {
     lines.push(`${message.role}: ${message.content}`);
   }
+
+  if (retrievalInstruction) lines.push(`system: ${retrievalInstruction}`);
 
   // Push in prompt
   lines.push(`user: ${userMessage}`, "assistant:");
@@ -70,6 +82,17 @@ async function createTitle(
   return title.trim().split("\n")[0] || "New conversation";
 }
 
+function readRetrievalMode(value: unknown): RagRetrievalMode | undefined {
+  // The chat route accepts the new graph mode from Search Settings.
+  if (
+    value === "semantic" || value === "bm25" || value === "hybrid" || value === "graph"
+  ) {
+    return value;
+  }
+
+  return undefined;
+}
+
 export const POST: RequestHandler = async ({ params, request }) => {
   const body = await request.json();
   const userSettings = (await db
@@ -85,7 +108,10 @@ export const POST: RequestHandler = async ({ params, request }) => {
   const documentIds = Array.isArray(body.document_ids)
     ? body.document_ids.map((value: unknown) => String(value).trim()).filter(Boolean)
     : [];
-  const retrievalMode = (body.retrieval_mode || userSettings.retrievalMode) as RagRetrievalMode;
+  const retrievalMode =
+    readRetrievalMode(body.retrieval_mode) ??
+    readRetrievalMode(userSettings.retrievalMode) ??
+    "hybrid";
   const promptTemplateId =
     body.prompt_template_id ||
     body.promptTemplateId ||

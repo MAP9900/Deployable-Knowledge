@@ -11,16 +11,22 @@ import {
   type Bm25SearchMatch,
 } from "./bm25-search";
 import type { SearchChunkType } from "./search-shared";
+import {
+  searchKnowledgeGraph,
+  type KnowledgeGraphMatch,
+  type KnowledgeGraphPath,
+} from "$lib/server/knowledge-graph";
 
 const DEFAULT_RAG_TOP_K = 5; // Now adjustable in Search Window Settings
 const MAX_CONTEXT_CHARS = 1200; // Same as max chunk size for now
 const MAX_PREVIEW_CHARS = 200;
 const DEFAULT_RETRIEVAL_MODE =
   process.env.RAG_RETRIEVAL_MODE === "bm25" ? "bm25" :
-  process.env.RAG_RETRIEVAL_MODE === "semantic" ? "semantic" : "hybrid"; // Now adjustable in Search Window Settings
+  process.env.RAG_RETRIEVAL_MODE === "semantic" ? "semantic" :
+  process.env.RAG_RETRIEVAL_MODE === "graph" ? "graph" : "hybrid";
 
-export type RagRetrievalMode = "semantic" | "bm25" | "hybrid";
-type RagMatch = SemanticSearchMatch | Bm25SearchMatch | HybridSearchMatch;
+export type RagRetrievalMode = "semantic" | "bm25" | "hybrid" | "graph";
+type RagMatch = SemanticSearchMatch | Bm25SearchMatch | HybridSearchMatch | KnowledgeGraphMatch;
 
 export type RagSource = {
   title: string;
@@ -72,6 +78,22 @@ function buildSources(matches: RagMatch[]): RagSource[] {
   }));
 }
 
+// Relational paths are appended separately so the model can explain how entities connect.
+function formatGraphPaths(paths: KnowledgeGraphPath[]): string {
+  if (!paths.length) return "";
+
+  const lines = paths.slice(0, 5).map((path, index) => {
+    const chain = path.nodes.map((node, nodeIndex) => {
+      if (nodeIndex === 0) return node.label;
+      const relation = path.edges[nodeIndex - 1]?.relation ?? "RELATED_TO";
+      return `--${relation}--> ${node.label}`;
+    }).join(" ");
+    return `[Path ${index + 1}] ${chain}`;
+  });
+
+  return ["Retrieved knowledge-graph paths:", "", ...lines].join("\n");
+}
+
 // Chat uses hybrid by default. Set RAG_RETRIEVAL_MODE=semantic / bm25 to force one path
 // May want to switch to hybrid only in the future, kept for now to test/validate
 export async function retrieveRagContext({
@@ -114,6 +136,23 @@ export async function retrieveRagContext({
     return {
       mode,
       contextBlock: formatContext(search.results),
+      sources: buildSources(search.results),
+    };
+  }
+
+  if (mode === "graph") {
+    const search = await searchKnowledgeGraph({
+      query: question,
+      topK,
+      documentIds,
+      chunkTypes,
+    });
+    const chunkContext = formatContext(search.results);
+    const pathContext = formatGraphPaths(search.paths);
+
+    return {
+      mode,
+      contextBlock: [chunkContext, pathContext].filter(Boolean).join("\n\n"),
       sources: buildSources(search.results),
     };
   }

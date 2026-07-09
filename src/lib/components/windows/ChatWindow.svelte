@@ -24,7 +24,7 @@
   let busy = $state(false);
   let messages = $state<SessionMessage[]>([]);
   let messageStream = $state("");
-  let sendDisabled = $derived(busy || !draft.trim());
+  let sendDisabled = $derived(busy ? true : draft.trim().length === 0);
   let loadedSessionId: string | undefined;
   let selectedAssistantText = $state("");
 
@@ -34,14 +34,11 @@
     return (message.metadata as { sources?: Source[] })?.sources ?? [];
   }
 
-  function messageRetrievalMode(message: SessionMessage): string | undefined {
-    return (message.metadata as { retrievalMode?: string })?.retrievalMode;
-  }
-  // Semantic score is a cosine similarity in [-1, 1], so it doubles as an angular-similarity percentage
+  function sourceHref(s: Source) { return s.url ?? null; }
+  function sourceName(s: Source) { return s.title ?? s.url ?? "Source"; }
+  function sourceDescription(s: Source) { return s.description ?? s.title ?? ""; }
   function angularSimilarityPercent(s: Source): number | null { return s.score != null ? Math.round(s.score * 100) : null; }
   function sourceScoreLabel(s: Source) { return s.score != null ? `${Math.round(s.score * 100)}%` : "N/A"; }
-  // BM25 scores are unbounded, so show the raw score rather than treating it as a percentage
-  function bm25ScoreLabel(s: Source) { return s.score != null ? s.score.toFixed(4) : "N/A"; }
   let sendToNotebookVisible = $state(false);
   let sendToNotebookTop = $state(0);
   let sendToNotebookLeft = $state(0);
@@ -123,7 +120,6 @@
     draft = "";
     busy = true;
     status = "";
-    appState.lastQuery = text;
 
     const session = appState.currentSession ?? (await createSession());
     appState.currentSession = session;
@@ -139,41 +135,51 @@
 
     await scrollToBottom();
 
-    const res = await fetch(`/sessions/${session.id}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        model_id: appState.currentModelId,
-        provider_id: appState.currentProviderId,
-        max_tokens: appState.maxTokens,
-        temperature: appState.temperature,
-        top_k: appState.topK,
-        prompt_template_id: appState.promptTemplateId || null,
-        persona: appState.persona,
-        document_ids: $selectedDocumentIds,
-        retrieval_mode: appState.retrievalMode,
-        rag_top_k: appState.ragTopK,
-      }),
-    });
+    try {
+      const res = await fetch(`/sessions/${session.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          model_id: appState.currentModelId,
+          provider_id: appState.currentProviderId,
+          max_tokens: appState.maxTokens,
+          temperature: appState.temperature,
+          top_k: appState.topK,
+          prompt_template_id: appState.promptTemplateId || null,
+          persona: appState.persona,
+          document_ids: $selectedDocumentIds,
+          retrieval_mode: appState.retrievalMode,
+          rag_top_k: appState.ragTopK,
+        }),
+      });
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      for (const token of decoder.decode(value, { stream: true }).split("\n").filter(Boolean)) {
-        messageStream += token;
-        await scrollToBottom();
+      if (!res.ok || !res.body) {
+        throw new Error(`Chat request failed (${res.status})`);
       }
-    }
 
-    messages = await loadMessages(session.id);
-    loadedSessionId = session.id;
-    busy = false;
-    messageStream = "";
-    await scrollToBottom();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const token of decoder.decode(value, { stream: true }).split("\n").filter(Boolean)) {
+          messageStream += token;
+          await scrollToBottom();
+        }
+      }
+
+      messages = await loadMessages(session.id);
+      loadedSessionId = session.id;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send chat message.";
+      status = `${message}. Check that the selected LLM provider/model is running.`;
+    } finally {
+      busy = false;
+      messageStream = "";
+      await scrollToBottom();
+    }
   }
 
   async function createNewChat() {
@@ -204,7 +210,6 @@
   {onClose}
   contentLabel="Assistant chat"
 >
-
   <div class="chat-window">
     {#if status}
       <div class="chat-status li-subtle">
@@ -233,40 +238,29 @@
           {#if message.role === "user"}
             {message.content}
           {:else if message.role === "assistant"}
-            {@const sources = getMessageSources(message)}
-            {@const retrievalMode = messageRetrievalMode(message)}
             {message.content}
-            {#if sources.length}
+            {#if getMessageSources(message).length}
               <div class="msg-citations">
                 <div class="msg-citations-label">Sources</div>
                 <ol class="chat-source-list">
-                  {#each sources as source, index}
-                    {@const href = source.url ?? null}
-                    {@const title = source.title ?? source.url ?? "Source"}
-                    {@const description = source.description ?? source.title ?? ""}
+                  {#each getMessageSources(message) as source, index}
                     <li class="chat-source-row">
                       <div class="chat-source-main">
                         <div class="chat-source-text-block">
                           <span class="chat-source-num">{index + 1}.</span>
-                          <span class="chat-source-text">{description}</span>
+                          <span class="chat-source-text">{sourceDescription(source)}</span>
                         </div>
                         <div class="chat-source-action-line">
                           <div class="chat-source-action-left">
-                            {#if href}
-                              <a class="btn btn-sm chat-source-btn" href={href} target="_blank" rel="noopener noreferrer">
-                                {title}
+                            {#if sourceHref(source)}
+                              <a class="btn btn-sm chat-source-btn" href={sourceHref(source)} target="_blank" rel="noopener noreferrer">
+                                {sourceName(source)}
                               </a>
                             {/if}
                           </div>
-                          {#if retrievalMode === "semantic"}
-                            <span class="chat-source-score" style={`--score-pct: ${angularSimilarityPercent(source) ?? 0}%`}>
-                              Angular Similarity: {sourceScoreLabel(source)}
-                            </span>
-                          {:else if retrievalMode === "bm25"}
-                            <span class="chat-source-score">
-                              BM25 Score: {bm25ScoreLabel(source)}
-                            </span>
-                          {/if}
+                          <span class="chat-source-score" style={`--score-pct: ${angularSimilarityPercent(source) ?? 0}%`}>
+                            Angular Similarity: {sourceScoreLabel(source)}
+                          </span>
                         </div>
                       </div>
                     </li>
@@ -279,9 +273,8 @@
           {/if}
         </div>
       {/each}
-      
-      
-      {#if busy && !messageStream}
+
+      {#if busy && messageStream.length === 0}
         <div class="msg assistant">
           <div class="msg-md msg-pending" role="status" aria-live="polite">
             <span class="typing-indicator" aria-hidden="true">
@@ -290,7 +283,7 @@
             <span class="typing-text">Generating response...</span>
           </div>
         </div>
-      {:else if messageStream}
+      {:else if messageStream.length !== 0}
         <div class="msg assistant">{messageStream}</div>
       {/if}
     </div>
@@ -453,6 +446,7 @@
   .msg-md :global(p) { margin: 0 0 0.75em; }
   .msg-md :global(pre) { max-width: 100%; overflow-x: auto; white-space: pre-wrap; }
   .msg-md :global(code) { white-space: pre-wrap; }
+  .msg-error { color: var(--danger); }
   .msg-md :global(table) { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
   .msg-md :global(img) { max-width: 100%; height: auto; }
 
@@ -567,8 +561,8 @@
     border-radius: 999px;
     background: linear-gradient(
       90deg,
-      rgb(37 99 235 / 85%) 0 var(--score-pct, 0%),
-      hsl(var(--h) var(--sat) calc(var(--l-panel) + 4%)) var(--score-pct, 0%) 100%
+      rgb(37 99 235 / 85%) 0 var(--score-pct),
+      hsl(var(--h) var(--sat) calc(var(--l-panel) + 4%)) var(--score-pct) 100%
     );
     color: var(--text);
     font-size: 11px;
@@ -681,6 +675,5 @@
     .chat-new-button {
       border-radius: 0 0 0 13px;
     }
-
   }
 </style>

@@ -6,6 +6,9 @@ import type {
   UserSettings,
 } from "$lib/server/database/schema";
 
+// Knowledge Graph is selectable alongside the existing retrieval methods.
+export type RetrievalMode = "semantic" | "bm25" | "hybrid" | "graph";
+
 export type Settings = {
   provider: string;
   model: string;
@@ -14,7 +17,7 @@ export type Settings = {
   topK: number;
   promptTemplateId: string | null;
   persona: string;
-  retrievalMode: string;
+  retrievalMode: RetrievalMode;
   ragTopK: number;
 };
 
@@ -32,7 +35,7 @@ class AppState {
   promptTemplateId = $state("");
   promptTemplates = $state<PromptTemplate[]>([]);
   persona = $state("");
-  retrievalMode = $state("hybrid");
+  retrievalMode = $state<RetrievalMode>("hybrid");
   ragTopK = $state(5);
   lastQuery = $state("");
 
@@ -50,7 +53,7 @@ class AppState {
     this.topK = settings.topK ?? 8;
     this.promptTemplateId = settings.promptTemplateId || "";
     this.persona = settings.persona || "";
-    this.retrievalMode = settings.retrievalMode || "hybrid";
+    this.retrievalMode = readRetrievalMode(settings.retrievalMode) ?? "hybrid";
     this.ragTopK = settings.ragTopK ?? 5;
   }
 
@@ -74,3 +77,11 @@ export function createAppState(settings?: UserSettings | null) {
 }
 
 export type { AppState };
+
+function readRetrievalMode(value: unknown): RetrievalMode | undefined {
+  if (value === "semantic" || value === "bm25" || value === "hybrid" || value === "graph") {
+    return value;
+  }
+
+  return undefined;
+}

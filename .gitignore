@@ -22,6 +22,8 @@ chroma_db/
 app.db
 app.db-*
 drizzle/
+documents/*.pdf
+documents/corpus/
 
 
 # --- Model cache or sentence-transformers ---
