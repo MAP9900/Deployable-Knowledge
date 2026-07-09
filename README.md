@@ -96,6 +96,31 @@ Additional guides live in the [`docs/`](docs) folder:
 - [Configuration guide](docs/CONFIGURATION.md)
 - [Prompt & LLM integration](docs/PROMPTS_LLM.md)
 
+### Bibliography
+
+#### Academic Papers and Technical Reports
+*   Chen, B., Guo, Z., Yang, Z., Chen, Y., Chen, J., Liu, Z., Shi, C., & Yang, C. (2025). *PathRAG: Pruning graph-based retrieval augmented generation with relational paths*. arXiv. [https://arxiv.org/abs/2502.14902](https://arxiv.org/abs/2502.14902)
+*   Edge, D., Trinh, H., Cheng, N., Bradley, J., Chao, A., Mody, A., Truitt, S., Metropolitansky, D., Ness, R. O., & Larson, J. (2024). *From local to global: A graph RAG approach to query-focused summarization*. arXiv. [https://doi.org/10.48550/arXiv.2404.16130](https://doi.org/10.48550/arXiv.2404.16130)
+*   Guo, Z., Xia, L., Yu, Y., Ao, T., & Huang, C. (2024). *LightRAG: Simple and fast retrieval-augmented generation*. arXiv. [https://arxiv.org/abs/2410.05779](https://arxiv.org/abs/2410.05779)
+*   Khosravi, L. ["xhluca"]. (2024). *BM25S: A fast and efficient Python implementation of BM25*. arXiv. [https://arxiv.org/abs/2407.03618](https://arxiv.org/abs/2407.03618)
+*   Xiao, S., Liu, Z., Zhang, P., & Nik, M. (2023). *C-Pack: Packaged resources to advance general Chinese embedding*. arXiv. [https://doi.org/10.48550/arXiv.2309.07597](https://doi.org/10.48550/arXiv.2309.07597)
+
+#### Technical Documentation and Professional Guides
+*   LangChain. (2026). *Text splitter integrations*. [https://docs.langchain.com/oss/python/integrations/splitters](https://docs.langchain.com/oss/python/integrations/splitters)
+*   Liu, J. (2023). *SentenceSplitter* (v0.10.10) [Software documentation]. LlamaIndex. [https://llamaindexxx.readthedocs.io/en/latest/api/llama_index.core.node_parser.SentenceSplitter.html](https://llamaindexxx.readthedocs.io/en/latest/api/llama_index.core.node_parser.SentenceSplitter.html)
+*   LlamaIndex. (n.d.). *Semantic chunker* [Developer documentation]. [https://developers.llamaindex.ai/python/examples/node_parsers/semantic_chunking/](https://developers.llamaindex.ai/python/examples/node_parsers/semantic_chunking/)
+*   Schwaber-Cohen, R., & Patel, A. (2025, June 28). *Chunking strategies for LLM applications*. Pinecone. [https://www.pinecone.io/learn/chunking-strategies/](https://www.pinecone.io/learn/chunking-strategies/)
+*   Stegeman, J. (2024, July 22). *What is a knowledge graph?* Neo4j. [https://neo4j.com/blog/genai/what-is-knowledge-graph/](https://neo4j.com/blog/genai/what-is-knowledge-graph/)
+
+#### Models and Repositories
+*   Beijing Academy of Artificial Intelligence. (2023). *bge-reranker-large* [Model card]. Hugging Face. [https://huggingface.co/BAAI/bge-reranker-large](https://huggingface.co/BAAI/bge-reranker-large)
+*   Cross-Encoder. (n.d.). *ms-marco-MiniLM-L6-v2* [Model card]. Hugging Face. [https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2)
+*   Zaratiana, U., Tomeh, N., Holat, P., & Charnois, T. (n.d.). *GLiNER: Generalist and lightweight model for named entity recognition* [GitHub repository]. GitHub. [https://github.com/urchade/GLiNER](https://github.com/urchade/GLiNER)
+
+#### Video Presentations
+*   Ebbelaar, D. (2026). *The complete guide to hybrid search in RAG (BM25 + embeddings + reranker)* [Video]. YouTube.
+*   Julien, S. (2026). *When vectors break down: Graph-based RAG for dense enterprise knowledge* [Video]. AI Engineer / YouTube.
+
 ## Contributing
 
 1. Create a fork off this repo
@@ -118,5 +143,3 @@ make run
 ```
 
 Visit <http://localhost:8000> once the server starts. Ollama is available by default with the seeded `llama3` model; use **Manage API Keys** in the prompt editor to connect hosted providers.
-
-
