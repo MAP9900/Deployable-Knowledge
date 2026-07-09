@@ -27,7 +27,7 @@ export type WindowDefinition = WindowInstanceProps & {
 export const windowDefinitions = [
   {
     id: "documents-window",
-    title: "Documents",
+    title: "Document Library",
     column: "left",
     component: DocumentsWindow,
   },
@@ -39,7 +39,7 @@ export const windowDefinitions = [
   },
   {
     id: "assistant-settings",
-    title: "Assistant Settings",
+    title: "Settings",
     column: "right",
     component: AssistantSettings,
   },

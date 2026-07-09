@@ -27,6 +27,9 @@ function createPrompt(
   ragContext = "",
 ) {
   const lines = [];
+  const ragInstruction = ragContext
+    ? "You are a RAG helper. Only answer using the provided context. Do not add information that is not in context. If the answer is not in context, say you do not know."
+    : "";
   const retrievalInstruction = ragContext
     ? [
         "Current retrieved document context for the latest user question:",
@@ -37,11 +40,12 @@ function createPrompt(
         ragContext,
       ].join("\n")
     : "";
-  const systemParts = [systemPrompt, persona]
+  const personaBlock = persona.trim() ? `Persona: ${persona.trim()}` : "";
+  const systemParts = [systemPrompt, ragInstruction, personaBlock]
     .map((part) => part.trim())
     .filter(Boolean);
 
-  if (systemParts.length) lines.push(`system: ${systemParts.join("\n\n")}`);
+  if (systemParts.length) lines.push(systemParts.join("\n\n"));
 
   // Only take top 20 messages
   for (const message of messages.slice(-20)) {
@@ -104,7 +108,10 @@ export const POST: RequestHandler = async ({ params, request }) => {
   const documentIds = Array.isArray(body.document_ids)
     ? body.document_ids.map((value: unknown) => String(value).trim()).filter(Boolean)
     : [];
-  const retrievalMode = readRetrievalMode(body.retrieval_mode);
+  const retrievalMode =
+    readRetrievalMode(body.retrieval_mode) ??
+    readRetrievalMode(userSettings.retrievalMode) ??
+    "hybrid";
   const promptTemplateId =
     body.prompt_template_id ||
     body.promptTemplateId ||
@@ -225,3 +232,4 @@ export const POST: RequestHandler = async ({ params, request }) => {
     },
   });
 };
+

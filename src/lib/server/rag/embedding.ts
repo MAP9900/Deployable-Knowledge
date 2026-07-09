@@ -7,15 +7,14 @@ import {
   type NewDocument,
   type NewDocumentChunk,
 } from "../database/schema";
-import type { ParsedChunk } from "./parse/parse-shared";
-import { EMBEDDING_MODEL, embedTexts } from "./embedding-model";
+import type { ParsedChunk } from "./chunk/parse-shared";
+import { embedTexts } from "./embedding-model";
 
 const INSERT_BATCH_SIZE = 100; //Can adjust later
 
 type StoreChunksResult = {
   documentId: string;
   chunkCount: number;
-  embeddingModel: string;
 };
 
 // SQLite DB stores embeddings as bytes, however semantic search reads them back as Float32 vectors
@@ -52,19 +51,7 @@ function buildChunkRows(
     pageIndex: chunk.pageIndex,
     chunkIndex: chunk.chunkIndex,
     content: chunk.content,
-    startChar: chunk.metadata.startChar,
-    endChar: chunk.metadata.endChar,
-    wordCount: chunk.metadata.wordCount,
-    sentenceCount: chunk.metadata.sentenceCount,
-    metadata: {
-      // Duplicate source fields in metadata so exported/debug views can read a chunk alone. Could remove?
-      sourceTitle: chunk.source.title,
-      sourcePath: chunk.source.path,
-      sourceType: chunk.source.type,
-      ...chunk.metadata,
-    },
     embedding: embeddingToBuffer(embeddings[index] ?? []),
-    embeddingModel: EMBEDDING_MODEL,
     createdAt: now,
   }));
 }
@@ -105,6 +92,5 @@ export async function storeDocumentChunks(chunks: ParsedChunk[]): Promise<StoreC
   return {
     documentId: documentRow.id,
     chunkCount: chunkRows.length,
-    embeddingModel: EMBEDDING_MODEL,
   };
 }

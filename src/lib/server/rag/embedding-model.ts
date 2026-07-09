@@ -8,7 +8,7 @@ const EMBEDDING_DTYPE = process.env.SEMANTIC_EMBED_DTYPE ?? "q8";
 const EMBEDDING_BATCH_SIZE = Number(process.env.SEMANTIC_EMBED_BATCH_SIZE ?? "32");
 const ALLOW_REMOTE_MODELS = process.env.SEMANTIC_EMBED_ALLOW_REMOTE === "1";
 const EMBEDDING_CACHE_DIR =
-  process.env.SEMANTIC_EMBED_CACHE_DIR ?? resolve(process.cwd(), "tmp_model", "transformersjs");
+  process.env.SEMANTIC_EMBED_CACHE_DIR ?? resolve(process.cwd(), ".cache", "transformersjs");
 
 // Keep model files inside the repo by default so setup is portable across machines
 env.cacheDir = EMBEDDING_CACHE_DIR;
@@ -17,11 +17,16 @@ env.allowRemoteModels = ALLOW_REMOTE_MODELS;
 
 let embeddingPipelinePromise: Promise<any> | null = null;
 
-// Load the transformer once and reuse it across ingest/search calls 
+// Load the transformer once and reuse it across ingest/search calls
 async function getEmbeddingPipeline() {
   if (!embeddingPipelinePromise) {
+    // Clear the cached promise on failure so a transient/missing-cache error doesn't
+    // permanently wedge the pipeline for the rest of the process's lifetime.
     embeddingPipelinePromise = pipeline("feature-extraction", EMBEDDING_MODEL, {
       dtype: EMBEDDING_DTYPE as "q8" | "q4" | "fp32" | "fp16",
+    }).catch((err) => {
+      embeddingPipelinePromise = null;
+      throw err;
     });
   }
 

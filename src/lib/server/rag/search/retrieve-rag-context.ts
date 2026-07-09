@@ -17,8 +17,8 @@ import {
   type KnowledgeGraphPath,
 } from "$lib/server/knowledge-graph";
 
-const DEFAULT_RAG_TOP_K = 5; // Can be adjsuted, number of chunks the LLM recieves 
-const MAX_CONTEXT_CHARS = 1200; // Same as chunk size for now
+const DEFAULT_RAG_TOP_K = 5; // Now adjustable in Search Window Settings
+const MAX_CONTEXT_CHARS = 1200; // Same as max chunk size for now
 const MAX_PREVIEW_CHARS = 200;
 const DEFAULT_RETRIEVAL_MODE =
   process.env.RAG_RETRIEVAL_MODE === "bm25" ? "bm25" :
@@ -51,27 +51,18 @@ function compactText(text: string, limit: number) {
   return `${compact.slice(0, limit).trimEnd()}...`;
 }
 
-// Format retrieved chunks as numbered context blocks so answers can cite the matching source
+// Format retrieved chunks in the old RAG prompt style
 function formatContext(matches: RagMatch[]) {
   if (matches.length === 0) return "";
 
-  const sections = matches.map((match, index) => {
+  const items = matches.map((match) => {
     const content = compactText(match.content, MAX_CONTEXT_CHARS);
+    const source = match.sourceTitle || match.sourcePath || "unknown";
 
-    return [
-      `[${index + 1}] Title: ${match.sourceTitle}`,
-      `Page: ${match.pageIndex + 1}`,
-      `Chunk: ${match.chunkIndex}`,
-      "Content:",
-      content,
-    ].join("\n");
+    return `- ${content} (source: ${source})`;
   });
 
-  return [
-    "Retrieved document context:",
-    "",
-    ...sections.flatMap((section) => [section, ""]),
-  ].join("\n").trim();
+  return ["Relevant context:", ...items].join("\n");
 }
 
 // Sources are the user-facing citation list, so keep them shorter than the model context
@@ -108,7 +99,7 @@ function formatGraphPaths(paths: KnowledgeGraphPath[]): string {
 export async function retrieveRagContext({
   question,
   documentIds = [],
-  chunkTypes = ["TEXT", "TABLE"],
+  chunkTypes = ["TEXT", "TABLE", "IMAGE"],
   topK = DEFAULT_RAG_TOP_K,
   mode = DEFAULT_RETRIEVAL_MODE,
 }: {
