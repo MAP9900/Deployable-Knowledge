@@ -122,6 +122,52 @@
       progress = null;
     }
   }
+
+  async function deleteSelectedDocuments() {
+    if (busy || $selectedDocumentIds.length === 0) return;
+
+    busy = true;
+    try {
+      const response = await fetch("/documents", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ documentIds: $selectedDocumentIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      await refreshDocuments("Selected documents deleted.");
+    } catch {
+      showToast("Unable to delete selected documents.");
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function clearAllDocuments() {
+    if (busy) return;
+
+    busy = true;
+    try {
+      const response = await fetch("/documents", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ clearAll: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      await refreshDocuments("All documents cleared.");
+    } catch {
+      showToast("Unable to clear documents.");
+    } finally {
+      busy = false;
+    }
+  }
 </script>
 
 <BaseWindow
@@ -171,6 +217,24 @@
         onclick={() => refreshDocuments().catch(() => showToast("Documents failed to load"))}
       >
         <Icon name="refresh" size={16} />
+      </button>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        disabled={busy || $selectedDocumentIds.length === 0}
+        onclick={deleteSelectedDocuments}
+      >
+        <Icon name="delete" size={16} />
+        <span>Delete selected</span>
+      </button>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        disabled={busy || documents.length === 0}
+        onclick={clearAllDocuments}
+      >
+        <Icon name="delete_sweep" size={16} />
+        <span>Clear all</span>
       </button>
     </form>
 
