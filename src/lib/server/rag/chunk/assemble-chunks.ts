@@ -15,28 +15,30 @@ export function assembleChunks(
 ): ParsedChunk[] {
   const chunksByPage = new Map<number, ParsedChunk[]>();
 
-  for (const chunk of chunks) {
-    const pageIndex = chunk.pageIndex;
-    const pageChunks = chunksByPage.get(pageIndex) ?? [];
-    pageChunks.push(chunk);
-    chunksByPage.set(pageIndex, pageChunks);
-  }
-
-  const finalChunks: ParsedChunk[] = [];
-  const pageIndexes = [...new Set(pages.map((page) => page.pageIndex))];
-
   for (const pageIndex of pageIndexes) {
+    const pageChunks = chunksByPage.get(pageIndex) ?? [];
     const seenContent = new Set<string>();
     let chunkIndex = 0;
 
-    for (const chunk of chunksByPage.get(pageIndex) ?? []) {
+    for (const chunk of pageChunks) {
       const content = chunk.content.trim();
       const wordCount = countWords(content);
       const tooShort = chunk.chunkType === "TEXT" && wordCount < MIN_TEXT_CHUNK_WORDS;
 
-      if (!content || seenContent.has(content) || tooShort) continue;
+      const contained = pageChunks.some((other) => {
+        const otherContent = other.content.trim();
+        
+        return (
+          other !== chunk &&
+          otherContent.length > content.length &&
+          otherContent.includes(content)
+        );
+      });
+
+      if (!content || seenContent.has(content) || tooShort || contained) continue;
 
       seenContent.add(content);
+
       // Rebuild ids after filtering so chunkIndex and chunkId match final page order
       finalChunks.push({
         ...chunk,
