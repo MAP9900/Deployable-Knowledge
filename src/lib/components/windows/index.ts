@@ -70,4 +70,10 @@ export const windowDefinitions = [
     column: "right",
     component: NotebookWindow,
   },
+  {
+    id: "search-window",
+    title: "Search Settings",
+    column: "right",
+    component: SearchWindow,
+  },
 ] satisfies WindowDefinition[];

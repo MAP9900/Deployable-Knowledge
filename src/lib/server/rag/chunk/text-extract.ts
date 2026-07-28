@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { PDFParse, type EmbeddedImage, type TableArray } from "pdf-parse";
-import { createWorker, OEM, PSM, type Worker } from "tesseract.js";
+import type { Worker } from "tesseract.js";
 import {
   normalizeWhitespace,
   type ExtractedChunk as Chunk,
   type Source,
 } from "./parse-shared.ts";
-import { cleanOcrText } from "./ocr-text-quality";
+import { createOcrWorker } from "./ocr";
 
 export type TextExtractionResult = {
   chunks: Chunk[];
@@ -41,17 +41,7 @@ async function ocrEmbeddedImages(
         if (image.width < 80 || image.height < 24) continue;
 
         if (!worker) {
-          worker = await createWorker("eng", OEM.LSTM_ONLY, {
-            cacheMethod: "readOnly",
-            cachePath: process.cwd(),
-            gzip: false,
-            langPath: process.cwd(),
-          });
-          await worker.setParameters({
-            tessedit_pageseg_mode: PSM.SPARSE_TEXT,
-            user_defined_dpi: "300",
-            debug_file: "/dev/null",
-          });
+          worker = await createOcrWorker();
         }
 
         try {

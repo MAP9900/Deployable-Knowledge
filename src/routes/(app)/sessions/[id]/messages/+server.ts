@@ -23,6 +23,7 @@ import {
   retrieveRagContext,
   resolveRagRetrievalMode,
   type RagContextResult,
+
   type RagRetrievalMode,
 } from "$lib/server/rag/search/retrieve-rag-context";
 import {
@@ -53,7 +54,7 @@ function createPrompt(
 ) {
   const lines = [];
   const ragInstruction = ragContext
-    ? "You are a RAG helper. Only answer using the provided context. Do not add information that is not in context. If the answer is not in context, say 'I do not know the answer to that based off the context provided'."
+    ? "You have reference context retrieved from the user's selected document(s) below. If it's relevant to the question, ground your answer in it and prefer it over general knowledge. If it is NOT relevant to the question (e.g. the question is about something unrelated to the document), ignore it and just answer the question normally using your own knowledge — do not refuse and do not claim you don't know just because the document doesn't cover it."
     : "";
   const personaBlock = persona.trim() ? `Persona: ${persona.trim()}` : "";
   const systemParts = [systemPrompt, ragInstruction, personaBlock, ragContext]
@@ -354,7 +355,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
         persona,
         ragContext.contextBlock,
       );
-
   const timestamp = new Date();
 
   const stream = new ReadableStream({
@@ -421,3 +421,4 @@ export const POST: RequestHandler = async ({ params, request }) => {
     },
   });
 };
+

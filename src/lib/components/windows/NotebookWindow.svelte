@@ -30,6 +30,7 @@
     toggleNotebookContextPage,
   } from "$lib/utils/notebookContextSelection";
   import { applyNotebookState } from "$lib/utils/notebookState";
+  import { formatPositionLabel } from "$lib/utils/positionLabel";
   import {
     NOTEBOOK_TEXT_CHARACTER_LIMIT,
     NOTEBOOK_TEXT_WARNING_CHARACTER_COUNT,
@@ -69,8 +70,7 @@
   // field is derived from the schema types; only `preview` is computed
   // server-side and has no column of its own.
   type NotebookSourceItem = Pick<NotebookSource, "id" | "chunkId" | "createdAt"> &
-    Pick<DocumentChunk, "pageIndex"> & {
-      documentId: Document["id"];
+    Pick<DocumentChunk, "pageIndex" | "chunkIndex"> & {
       documentTitle: Document["title"];
       sourceType: Document["sourceType"];
       preview: string;
@@ -1103,7 +1103,9 @@
                       </button>
                       <div class="source-row-main">
                         <span class="source-doc-title">{source.documentTitle}</span>
-                        <span class="source-page">Page {source.pageIndex + 1}</span>
+                        {#if formatPositionLabel(source.sourceType, source.pageIndex, source.chunkIndex)}
+                          <span class="source-page">{formatPositionLabel(source.sourceType, source.pageIndex, source.chunkIndex)}</span>
+                        {/if}
                       </div>
                       <p class="source-preview">{source.preview}</p>
                       <div class="source-row-actions">

@@ -5,6 +5,8 @@
   import Icon from "$lib/components/utils/Icon.svelte";
   import { selectedDocumentIds } from "$lib/utils/documentSelection";
   import type { AppState } from "$lib/state.svelte";
+  import type { UserSettings } from "$lib/server/database/schema";
+  import { formatPositionLabel } from "$lib/utils/positionLabel";
   import type { WindowInstanceProps } from "./index";
 
   type RetrievalMode = "semantic" | "bm25" | "hybrid";
@@ -12,7 +14,9 @@
     chunkId: string;
     documentId: string;
     sourceTitle: string;
+    sourceType: "PDF" | "DOCX" | "PPTX" | "CSV" | "XLSX" | "TXT" | "MD";
     pageIndex: number;
+    chunkIndex: number;
     content: string;
   };
   type SearchResults = Record<RetrievalMode, SearchMatch[]>;
@@ -113,7 +117,7 @@
   {onToggleCollapse}
   {onClose}
   contentLabel="Search context window"
->
+  >
   <div class="search-context-window">
     <form class="search-bar" onsubmit={handleSubmit}>
       <input
@@ -166,55 +170,35 @@
             <div class="result-meta">
               <span class="result-rank">#{index + 1}</span>
               <span class="result-title">{result.sourceTitle}</span>
-              <span>Page {result.pageIndex + 1}</span>
+              {#if formatPositionLabel(result.sourceType, result.pageIndex, result.chunkIndex)}
+                <span>{formatPositionLabel(result.sourceType, result.pageIndex, result.chunkIndex)}</span>
+              {/if}
             </div>
             <p class="result-content">{result.content}</p>
-            <div class="result-actions">
-              <a
-                class="btn btn-sm"
-                href={pdfHref(result)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Show in PDF
-              </a>
-            </div>
+            {#if result.sourceType === "PDF"}
+              <div class="result-actions">
+                <a
+                  class="btn btn-sm"
+                  href={pdfHref(result)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Show in PDF
+                </a>
+              </div>
+            {/if}
           </div>
         {/each}
       {:else}
         <p class="search-message">No context</p>
       {/if}
     </div>
+
   </div>
 
 </BaseWindow>
 
 <style>
-  .search-context-window {
-    display: grid;
-    min-height: 0;
-    gap: 10px;
-  }
-
-  .search-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 78px auto;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .chunk-count {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .search-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-
   .retrieval-toggle {
     display: grid;
     width: min(260px, 100%);

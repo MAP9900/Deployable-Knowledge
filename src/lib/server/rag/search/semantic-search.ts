@@ -3,13 +3,8 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db } from "../../database/database";
-import {
-  document_chunks,
-  documents,
-  type Document,
-} from "../../database/schema";
-import { embedTextsForStoredDimension } from "../embedding-model";
-import { isUsefulImageText } from "../chunk/ocr-text-quality";
+import { document_chunks, documents, type Document } from "../../database/schema";
+import { EMBEDDING_DIMENSION, embedTextsForStoredDimension } from "../embedding-model";
 import {
   cleanFilterValues,
   type ScoredSearchMatch,
@@ -27,6 +22,7 @@ type CandidateRow = {
   sourcePath: string;
   sourceType: Document["sourceType"];
   sourceTitle: string;
+  sourceType: Document["sourceType"];
   pageIndex: number;
   chunkIndex: number;
   chunkType: SearchChunkType;
@@ -75,6 +71,7 @@ export async function searchSemantic(
       sourcePath: documents.sourcePath,
       sourceType: documents.sourceType,
       sourceTitle: documents.title,
+      sourceType: documents.sourceType,
       pageIndex: document_chunks.pageIndex,
       chunkIndex: document_chunks.chunkIndex,
       chunkType: document_chunks.chunkType,
@@ -140,12 +137,19 @@ export async function searchSemantic(
   }));
 
   const scoredRows: SemanticSearchMatch[] = [];
+  let skippedDimensionMismatches = 0;
 
   for (const candidate of decodedCandidates) {
     const { row, vector } = candidate;
     const queryEmbedding = queryEmbeddings.get(vector.length);
     if (!queryEmbedding) {
       throw new Error(`No query embedding is available for ${vector.length} dimensions.`);
+    }
+
+    // Skip chunks embedded under a different model - mismatched lengths poison the dot product to NaN
+    if (vector.length !== queryEmbedding.length) {
+      skippedDimensionMismatches += 1;
+      continue;
     }
 
     let score = 0;
@@ -163,12 +167,21 @@ export async function searchSemantic(
       sourcePath: row.sourcePath,
       sourceType: row.sourceType,
       sourceTitle: row.sourceTitle,
+      sourceType: row.sourceType,
       pageIndex: row.pageIndex,
       chunkIndex: row.chunkIndex,
       chunkType: row.chunkType,
       content: row.content,
       score,
     });
+  }
+
+  if (skippedDimensionMismatches > 0) {
+    console.warn(
+      `[semantic-search] Skipped ${skippedDimensionMismatches} chunk(s) embedded with a different ` +
+      `vector size than the current model (${EMBEDDING_DIMENSION}-dim). Re-ingest their source ` +
+      `document(s) to make them searchable again.`,
+    );
   }
 
   scoredRows.sort((left, right) => right.score - left.score);
