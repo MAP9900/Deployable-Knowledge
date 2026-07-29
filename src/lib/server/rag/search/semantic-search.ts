@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db } from "../../database/database";
 import { document_chunks, documents, type Document } from "../../database/schema";
+import { isUsefulImageText } from "../chunk/ocr-text-quality";
 import { EMBEDDING_DIMENSION, embedTextsForStoredDimension } from "../embedding-model";
 import {
   cleanFilterValues,
