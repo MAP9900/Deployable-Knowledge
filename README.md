@@ -1,62 +1,41 @@
-# Deployable-Knowledge
+# Architecture overview
 
-**Version vA0.3.0**
+Deployable Knowledge is a SvelteKit application with three main server-side
+layers:
 
-Offline‑first retrieval‑augmented generation (RAG) stack for disconnected or bandwidth‑constrained environments.
+1. Route handlers under `src/routes/(app)` authenticate HTTP requests and map
+   request/profile values into chat, search, document, and notebook operations.
+2. Server libraries under `src/lib/server` own providers, the agent loop, the
+   tool registry, retrieval/ingestion, and Drizzle database access.
+3. Svelte components under `src/lib/components` render the browser workspace
+   and consume the route APIs.
 
-## Overview
+Chat follows this flow:
 
-Deployable‑Knowledge bundles a local vector store, prompt management and a lightweight web UI around a pluggable large‑language model.  Documents are embedded locally, the frontend is developed in [Sveltekit](https://svelte.dev), the backend is written in [Typescript](https://typescriptlang.org).
-
-## Features
-
-- **Document ingestion** for PDF and plaintext sources
-- **ChromaDB** vector store with sentence‑transformer embeddings
-- **Chat and search** endpoints with optional streaming responses
-- **Configurable prompts** and persona editing
-- **Authentication middleware** with session and CSRF protection
-
-## Quick Start for Development
-
-```bash
-# First time setup (don't do this everytime)
-npm install
-npm run db:generate
-npm run db:migrate # to be run if there were upstream database changes
-```
-## For Knowledge Graph GLiNER
-`python -m venv .venv`
-* macOS/Linux:
-`source .venv/bin/activate`
-* Windows:
-`.\.venv\Scripts\activate`
-`pip install -r requirements.txt`
-
-# After and every other startup run 
-```bash
-npm run dev
+```text
+Chat UI -> session message route -> agent runner -> provider stream
+                                      |                 |
+                                      | tool call       | structured messages
+                                      v                 |
+                                  tool registry <-------+
+                                      |
+                                  search tool -> hybrid / semantic / BM25 retrieval
+                                      |
+                                  tool result -> next model turn -> final answer
 ```
 
-## Architecture overview
+Providers normalize Ollama and GitHub Models streams into content, reasoning,
+and tool-call deltas. The agent assembles those deltas, preserves
+assistant/tool messages between turns, executes registered tools, and buffers
+intermediate model content. The session route streams model-turn and tool-call
+lifecycle events while the run is active, followed by final-answer text. It
+persists one ordered title/output trace for provider reasoning and complete
+tool results, plus one ordered, typed context-output list on the final assistant
+message. The runner never synthesizes a specific tool call from an uncertainty
+phrase.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed diagrams and data‑flow breakdowns.
+The same registered `search` implementation serves interactive `/search`
+requests, so direct search and model-initiated retrieval share validation and
+execution behavior.
 
-## Documentation
-
-Additional guides live in the [`docs/`](docs) folder:
-
-- [API reference](docs/API_REFERENCE.md)
-- [UI overview](docs/UI_OVERVIEW.md)
-- [Backend services](docs/BACKEND_SERVICES.md)
-- [Configuration guide](docs/CONFIGURATION.md)
-- [Prompt & LLM integration](docs/PROMPTS_LLM.md)
-
-## Contributing
-
-1. Create a fork off this repo
-2. Create a feature branch off `cancun` on your fork.
-3. Follow the existing coding style (run formatter, before committing `npm run format`). 
-4. Open a PR describing the change and link to any relevant issues.
-
----
-Released under the MIT license.
+Return to [README](../README.md) or browse the [API reference](API_REFERENCE.md).
